@@ -1,0 +1,1 @@
+export function failure(error:unknown){const message=error instanceof Error?error.message:'';const safe=/inválid|indisponível|Horário|capacidade|Seleção|Adiciona|repetid|autorizado|tentativas|aguarde|Confira|antecedência/i.test(message);return Response.json({error:safe?message:'Não foi possível concluir. Tente novamente.'},{status:/autorizado/.test(message)?401:400});}

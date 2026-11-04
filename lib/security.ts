@@ -1,0 +1,10 @@
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { cookies, headers } from 'next/headers';
+export const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
+export const passwordHash=(value:string,salt=randomBytes(16).toString('hex'))=>`${salt}:${scryptSync(value,salt,64).toString('hex')}`;
+export function passwordValid(value:string,stored:string){const [salt,key]=stored.split(':');if(!salt||!key)return false;const a=Buffer.from(key,'hex'),b=scryptSync(value,salt,64);return a.length===b.length&&timingSafeEqual(a,b);}
+function secret(){const value=process.env.SESSION_SECRET;if(!value||value.length<32)throw new Error('Sessão não configurada.');return value;}
+export function signSession(id:string,role:string){const payload=Buffer.from(JSON.stringify({id,role,exp:Date.now()+8*3600000})).toString('base64url');return `${payload}.${createHmac('sha256',secret()).update(payload).digest('base64url')}`;}
+export async function staff(admin=false){const token=(await cookies()).get('bruma_session')?.value;if(!token)throw new Error('Acesso não autorizado.');const [payload,sig]=token.split('.');const expected=createHmac('sha256',secret()).update(payload).digest('base64url');if(!sig||sig.length!==expected.length||!timingSafeEqual(Buffer.from(sig),Buffer.from(expected)))throw new Error('Acesso não autorizado.');const user=JSON.parse(Buffer.from(payload,'base64url').toString());if(user.exp<Date.now()||(admin&&user.role!=='admin'))throw new Error('Acesso não autorizado.');return user;}
+const buckets=new Map<string,{count:number,until:number}>();
+export async function guard(scope:string,limit=30){const h=await headers();const origin=h.get('origin'),host=h.get('host');if(origin&&new URL(origin).host!==host)throw new Error('Origem inválida.');const key=scope+':'+(h.get('x-forwarded-for')?.split(',')[0]??'local');const now=Date.now();if(buckets.size>10000)for(const [k,v]of buckets)if(v.until<now)buckets.delete(k);const b=buckets.get(key);if(b&&b.until>now){if(++b.count>limit)throw new Error('Muitas tentativas. Aguarde um minuto.');}else buckets.set(key,{count:1,until:now+60000});}

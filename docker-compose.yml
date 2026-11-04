@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bruma
+      POSTGRES_PASSWORD: bruma_local_only
+      POSTGRES_DB: bruma
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - bruma_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bruma -d bruma"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  bruma_pgdata:
