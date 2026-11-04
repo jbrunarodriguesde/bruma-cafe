@@ -76,3 +76,6 @@ Veja [referências e limitações de consulta](docs/design-references.md). A ide
 ## Demonstração sem banco
 Para explorar a interface sem PostgreSQL, defina DEMO_MODE=true no arquivo .env e execute npm install e npm run dev. O catálogo usa 18 produtos ilustrativos. Pedidos demonstrativos ficam apenas neste navegador, sem envio real. Painel da equipe requer o banco configurado.
 
+
+Na hospedagem sem DATABASE_URL, o catálogo entra automaticamente em demonstração. Para exigir banco e impedir esse comportamento, configure DEMO_MODE=false.
+
